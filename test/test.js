@@ -2,6 +2,12 @@ var crypto = require('crypto')
 var tape = require('tape')
 var Sha1 = require('../').sha1
 
+var nodeSupportsUint16 = false;
+try {
+	crypto.createHash('sha1').update(new Uint16Array());
+	nodeSupportsUint16 = true;
+} catch (err) {}
+
 var inputs = [
   ['', 'ascii'],
   ['abc', 'ascii'],
@@ -11,8 +17,10 @@ var inputs = [
   ['123456789abcdef123456789abcdef123456789abcdef123456789ab', 'ascii'],
   ['0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde', 'ascii'],
   ['0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', 'ascii'],
-  ['foobarbaz', 'ascii']
-]
+  ['foobarbaz', 'ascii'],
+	[Buffer.from('buffer')],
+	nodeSupportsUint16 ? [new Uint16Array([1, 2, 3])] : null
+].filter(Boolean);
 
 tape("hash is the same as node's crypto", function (t) {
   inputs.forEach(function (v) {
@@ -31,7 +39,7 @@ tape('call update multiple times', function (t) {
     var _hash = crypto.createHash('sha1')
 
     for (var i = 0; i < v[0].length; i = (i + 1) * 2) {
-      var s = v[0].substring(i, (i + 1) * 2)
+      var s = v[0].slice(i, (i + 1) * 2)
       hash.update(s, v[1])
       _hash.update(s, v[1])
     }
@@ -70,7 +78,7 @@ tape('hex encoding', function (t) {
     var _hash = crypto.createHash('sha1')
 
     for (var i = 0; i < v[0].length; i = (i + 1) * 2) {
-      var s = v[0].substring(i, (i + 1) * 2)
+      var s = v[0].slice(i, (i + 1) * 2)
       hash.update(Buffer.from(s, 'ascii').toString('hex'), 'hex')
       _hash.update(Buffer.from(s, 'ascii').toString('hex'), 'hex')
     }
